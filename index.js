@@ -8,16 +8,19 @@ const client = new Client({
   ],
 });
 
-async function askDeepSeek(prompt) {
+async function askOpenRouter(prompt) {
   try {
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'HTTP-Referer': 'https://railway.app', // Required by OpenRouter for ranking
+        'X-Title': 'Discord Bot', // Optional site name for OpenRouter
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        // Model ID for Nvidia Nemotron on OpenRouter:
+        model: 'nvidia/llama-3.1-nemotron-70b-instruct',
         messages: [
           { role: 'system', content: 'You are a helpful Discord AI assistant.' },
           { role: 'user', content: prompt },
@@ -26,13 +29,26 @@ async function askDeepSeek(prompt) {
     });
 
     const data = await response.json();
+
+    // Catch API errors from OpenRouter
+    if (!response.ok || data.error) {
+      console.error('OpenRouter API Error Payload:', data);
+      return `OpenRouter API Error: ${data.error?.message || response.statusText}`;
+    }
+
+    if (!data.choices || !data.choices[0]) {
+      console.error('Unexpected API Response:', data);
+      return 'Received an empty response from OpenRouter API.';
+    }
+
     return data.choices[0].message.content;
   } catch (error) {
-    return `Error calling DeepSeek API: ${error.message}`;
+    console.error('Fetch Error:', error);
+    return `Error calling OpenRouter API: ${error.message}`;
   }
 }
 
-client.on('ready', () => {
+client.on('clientReady', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
@@ -50,7 +66,7 @@ client.on('messageCreate', async (message) => {
     }
 
     await message.channel.sendTyping();
-    const reply = await askDeepSeek(prompt);
+    const reply = await askOpenRouter(prompt);
 
     if (reply.length > 2000) {
       for (let i = 0; i < reply.length; i += 1900) {
@@ -62,5 +78,4 @@ client.on('messageCreate', async (message) => {
   }
 });
 
-// ✅ CORRECT (JavaScript/discord.js syntax)
 client.login(process.env.DISCORD_TOKEN);
