@@ -62,4 +62,4 @@ client.on('messageCreate', async (message) => {
   }
 });
 
-client.run(process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN);
