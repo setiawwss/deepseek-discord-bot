@@ -8,19 +8,19 @@ const client = new Client({
   ],
 });
 
-async function askOpenRouter(prompt) {
+async function askNemotron(prompt) {
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'https://railway.app', // Required by OpenRouter for ranking
-        'X-Title': 'Discord Bot', // Optional site name for OpenRouter
+        'HTTP-Referer': 'https://railway.app',
+        'X-Title': 'Discord Bot',
       },
       body: JSON.stringify({
-        // Model ID for Nvidia Nemotron on OpenRouter:
-        model: 'nvidia/llama-3.1-nemotron-70b-instruct',
+        // Exact model string from OpenRouter for Nemotron 3 Ultra (free):
+        model: 'nvidia/nemotron-3-ultra-550b-a55b:free',
         messages: [
           { role: 'system', content: 'You are a helpful Discord AI assistant.' },
           { role: 'user', content: prompt },
@@ -30,21 +30,20 @@ async function askOpenRouter(prompt) {
 
     const data = await response.json();
 
-    // Catch API errors from OpenRouter
     if (!response.ok || data.error) {
-      console.error('OpenRouter API Error Payload:', data);
+      console.error('OpenRouter Error:', data);
       return `OpenRouter API Error: ${data.error?.message || response.statusText}`;
     }
 
     if (!data.choices || !data.choices[0]) {
-      console.error('Unexpected API Response:', data);
-      return 'Received an empty response from OpenRouter API.';
+      console.error('Unexpected Response:', data);
+      return 'Received an empty response from OpenRouter.';
     }
 
     return data.choices[0].message.content;
   } catch (error) {
     console.error('Fetch Error:', error);
-    return `Error calling OpenRouter API: ${error.message}`;
+    return `Error calling OpenRouter: ${error.message}`;
   }
 }
 
@@ -66,7 +65,7 @@ client.on('messageCreate', async (message) => {
     }
 
     await message.channel.sendTyping();
-    const reply = await askOpenRouter(prompt);
+    const reply = await askNemotron(prompt);
 
     if (reply.length > 2000) {
       for (let i = 0; i < reply.length; i += 1900) {
