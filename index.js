@@ -62,4 +62,5 @@ client.on('messageCreate', async (message) => {
   }
 });
 
+// ✅ CORRECT (JavaScript/discord.js syntax)
 client.login(process.env.DISCORD_TOKEN);
